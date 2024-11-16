@@ -5,28 +5,32 @@ import { Config } from './config.js';
 
 const app = fastifyModule({ logger: false });
 const gl = {}
+gl.logger = console
+gl.app = app
 gl.config = Config
 async function onExit() {
     console.log("exiting...")
     process.exit(0);
 }
 async function startServer() {
-    await app.register(cors, { origin: true, credentials: true, allowedHeaders: ['content-type'] });
-    app.addHook("preHandler", async (req, res) => {
-        console.log(req.url)
-    })
-    regEndpoints()
     const port = process.env.port || 8080
     await app.listen({ port, host: '0.0.0.0' });
     console.log(`Starting ${Config.project.name} service on:`, port)
 }
 dotenv.config({path:"env"})
 async function main() {
-    startServer()
+    await regEndpoints()
+    //create more classes here
+
+    await startServer()
     process.on('SIGINT', onExit);
     process.on('SIGTERM', onExit);
 }
-function regEndpoints(){
+async function regEndpoints(){
+    await app.register(cors, { origin: true, credentials: true, allowedHeaders: ['content-type'] });
+    app.addHook("preHandler", async (req, res) => {
+        console.log(req.url)
+    })
     app.get('/', (req, res) => {
         console.log(req.url)
         return Config.project.name
