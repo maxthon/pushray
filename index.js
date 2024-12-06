@@ -2,6 +2,8 @@ import fastifyModule from 'fastify';
 import cors from '@fastify/cors'
 import dotenv from "dotenv";
 import { Config } from './config.js';
+import { Util } from './common/util.js';
+
 
 const app = fastifyModule({ logger: false });
 const gl = {}
@@ -21,7 +23,7 @@ dotenv.config({path:"env"})
 async function main() {
     await regEndpoints()
     //create more classes here
-
+    await Util.create(gl)
     await startServer()
     process.on('SIGINT', onExit);
     process.on('SIGTERM', onExit);
