@@ -1,5 +1,5 @@
 export const Config = {
     project: {
-        name: "rest_template"
+        name: process.env.APP_NAME || "rest_template"
     }
 }

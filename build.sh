@@ -1,6 +1,6 @@
-source .env
-NAME="rest_template"
-PORT="${dockerPort:=8100}"
+source env
+NAME="${APP_NAME:=rest_template}"
+PORT="${DOCKER_PORT:=8100}"
 
 docker build -t $NAME .
 docker container stop $NAME
