@@ -69,7 +69,8 @@ async function regEndpoints() {
         console.log(body)
         const { cmd, result } = body
         if (cmd === 'login_successful') {
-
+            const { user } = gl
+            await user.handleLoginSuccessful_fromCommonAPI(result)
         }
         return "ok"
     })

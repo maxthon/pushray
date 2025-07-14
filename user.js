@@ -478,12 +478,9 @@ export class User extends BaseService {
 
     return { users, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
-  async handleAccountLoginSuccessful({salt,...rest}){
-    const user = await this.getUserById(uid)
-    if(!user){
-      throw new Error('用户不存在')
-    }
-    return user
+  async handleLoginSuccessful_fromCommonAPI({ salt, ...rest }) {
+    const { redis } = gl
+    redis.$r.set(salt, JSON.stringify(rest), { EX: 60 * 5 })
   }
 
   /**
