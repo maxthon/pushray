@@ -1,4 +1,4 @@
-source env
+source ./env
 NAME="${APP_NAME:=rest_template}"
 PORT="${DOCKER_PORT:=8100}"
 
