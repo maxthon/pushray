@@ -1,10 +1,10 @@
 export class BaseService {
-    static async create(gl) {
+    static async create(gl, opts) {
         const inst = new this()
         inst.gl = gl
         const { logger } = gl
         logger.info("initializing:", inst.constructor.name)
-        const err = await inst.init(gl)
+        const err = await inst.init(gl, opts)
         if (err) {
             logger.error("initializing ", inst.constructor.name, "failed:", err)
             throw new Error(err)

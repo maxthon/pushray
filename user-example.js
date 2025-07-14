@@ -331,13 +331,20 @@ async function userExample() {
     console.log('- status: INTEGER DEFAULT 1 (状态: 1=正常, 0=删除)');
     
     console.log('\n=== API端点说明 ===');
-    console.log('POST /api/users/register - 用户注册');
-    console.log('POST /api/users/login - 用户登录');
-    console.log('GET /api/users/:uid - 获取用户信息');
-    console.log('POST /api/users/:uid/update - 更新用户信息');
-    console.log('POST /api/users/:uid/password - 更新密码');
-    console.log('DELETE /api/users/:uid - 删除用户');
-    console.log('GET /api/users - 获取用户列表');
+    console.log('POST /users/register - 用户注册');
+    console.log('POST /users/login - 用户登录');
+    console.log('GET /users/:uid - 获取用户信息');
+    console.log('POST /users/:uid/update - 更新用户信息');
+    console.log('POST /users/:uid/password - 更新密码');
+    console.log('DELETE /users/:uid - 删除用户');
+    console.log('GET /users - 获取用户列表');
+    
+    console.log('\n=== API返回格式说明 ===');
+    console.log('成功响应: { code: 0, result: {...} }');
+    console.log('错误响应: { code: 100, err: "错误信息" }');
+    console.log('示例:');
+    console.log('  注册成功: { code: 0, result: { uid: 123, email: "user@example.com", ... } }');
+    console.log('  登录失败: { code: 100, err: "邮箱或密码错误" }');
     
     // 关闭数据库连接
     await db.close();

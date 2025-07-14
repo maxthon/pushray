@@ -5,7 +5,6 @@ import dotenv from "dotenv";
 import { Logger } from './logger.js';
 import { Config } from './config.js';
 import { Util } from './common/util.js';
-import { DB } from './db.js'
 
 dotenv.config({ path: "env" })
 const app = fastifyModule({ logger: false });
@@ -32,7 +31,13 @@ async function main() {
     await regEndpoints()
     //create more classes here
     await Util.create(gl)
-    await DB.create(gl)
+    if (process.env.Modules.indexOf("user") != -1) {
+        const { DB } = await import('./db.js')
+        await DB.create(gl)
+        const { User } = await import('./user.js')
+        await User.create(gl)
+    }
+
     await startServer()
     process.on('SIGINT', onExit);
     process.on('SIGTERM', onExit);
@@ -51,6 +56,11 @@ async function regEndpoints() {
         return "ok"
     })
     app.post('/logSearch', async (req, res) => {
+        const body = req.body
+        console.log(body)
+        return "ok"
+    })
+    app.post('/notify/_commonapi', async (req, res) => {
         const body = req.body
         console.log(body)
         return "ok"

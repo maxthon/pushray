@@ -1,2 +1,3 @@
 APP_NAME=test app
-DB_URL=postgresql://jeff:await-Pool.query@localhost:5432/postgres
+DB_URL=postgresql://jeff:await-Pool.query@localhost:5432/pushray
+Modules=user,auth

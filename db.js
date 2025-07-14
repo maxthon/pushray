@@ -4,12 +4,6 @@ import { BaseService } from './common/baseService.js';
 const { Pool } = pg;
 
 export class DB extends BaseService {
-    constructor() {
-        super();
-        this.pool = null;
-        this.isConnected = false;
-    }
-
     /**
      * 初始化数据库连接
      * @param {Object} gl - 全局对象
@@ -18,7 +12,8 @@ export class DB extends BaseService {
     async init(gl) {
         try {
             const { logger } = gl;
-
+            this.pool = null;
+            this.isConnected = false;
             // 优先使用 connectionString，如果没有则使用分离的配置参数
             const connectionString = process.env.DB_URL;
             if (!connectionString) {

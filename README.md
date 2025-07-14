@@ -322,13 +322,71 @@ CREATE TABLE users (
 
 系统自动注册以下RESTful API端点：
 
-- `POST /api/users/register` - 用户注册
-- `POST /api/users/login` - 用户登录
-- `GET /api/users/:uid` - 获取用户信息
-- `POST /api/users/:uid/update` - 更新用户信息
-- `POST /api/users/:uid/password` - 更新密码
-- `DELETE /api/users/:uid` - 删除用户（软删除）
-- `GET /api/users` - 获取用户列表
+- `POST /users/register` - 用户注册
+- `POST /users/login` - 用户登录
+- `GET /users/:uid` - 获取用户信息
+- `POST /users/:uid/update` - 更新用户信息
+- `POST /users/:uid/password` - 更新密码
+- `DELETE /users/:uid` - 删除用户（软删除）
+- `GET /users` - 获取用户列表
+
+### API返回格式
+
+所有API端点使用统一的返回格式：
+
+**成功响应：**
+```json
+{
+  "code": 0,
+  "result": {
+    // 具体的返回数据
+  }
+}
+```
+
+**错误响应：**
+```json
+{
+  "code": 100,
+  "err": "错误信息描述"
+}
+```
+
+**示例：**
+```javascript
+// 用户注册成功
+{
+  "code": 0,
+  "result": {
+    "uid": 123,
+    "email": "user@example.com",
+    "from": 0,
+    "info": { "name": "张三" },
+    "created_at": "2024-01-01T00:00:00.000Z",
+    "status": 1
+  }
+}
+
+// 登录失败
+{
+  "code": 100,
+  "err": "邮箱或密码错误"
+}
+
+// 获取用户列表成功
+{
+  "code": 0,
+  "result": {
+    "users": [...],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 50,
+      "totalPages": 5
+    }
+  }
+}
+```
 
 ### 安全特性
 
