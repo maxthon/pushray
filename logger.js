@@ -83,13 +83,7 @@ export class Logger {
      */
     writeErrorToFile(level, message, extra = {}) {
         const errorLogPath = this.getErrorLogPath();
-        const logEntry = {
-            timestamp: new Date().toISOString(),
-            level,
-            service: this.serviceName,
-            message,
-            ...extra
-        };
+        const logEntry = { timestamp: new Date().toISOString(), level, service: this.serviceName, message, ...extra };
 
         const logLine = JSON.stringify(logEntry) + '\n';
 
@@ -145,14 +139,7 @@ export class Logger {
      * 记录HTTP请求日志
      */
     logRequest(req, res, responseTime) {
-        const logData = {
-            method: req.method,
-            url: req.url,
-            statusCode: res.statusCode,
-            responseTime: `${responseTime}ms`,
-            userAgent: req.headers['user-agent'],
-            ip: req.ip || req.connection.remoteAddress
-        };
+        const logData = { method: req.method, url: req.url, statusCode: res.statusCode, responseTime: `${responseTime}ms`, userAgent: req.headers['user-agent'], ip: req.ip || req.connection.remoteAddress };
 
         if (res.statusCode >= 400) {
             this.error('HTTP Request Error', logData);

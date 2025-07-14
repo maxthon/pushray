@@ -422,21 +422,12 @@ export class User extends BaseService {
     }
 
     // 创建用户数据
-    const createUserData = {
-      email,
-      from: from || 0,
-      info
-    };
+    const createUserData = { email, from: from || 0, info };
 
     // 如果是第三方用户且没有密码，会自动生成随机密码
     const newUser = await this.createUser(createUserData);
 
-    this.gl.logger.info('用户创建成功', {
-      uid: newUser.uid,
-      email: newUser.email,
-      from: newUser.from,
-      fromName: this.getFromName(newUser.from)
-    });
+    this.gl.logger.info('用户创建成功', { uid: newUser.uid, email: newUser.email, from: newUser.from, fromName: this.getFromName(newUser.from) });
 
     return newUser;
   }
@@ -447,14 +438,7 @@ export class User extends BaseService {
    * @returns {Promise<Object>} 用户列表和分页信息
    */
   async getUserList(options = {}) {
-    const {
-      page = 1,
-      limit = 20,
-      status = null,
-      from = null,
-      search = null
-    } = options;
-
+    const { page = 1, limit = 20, status = null, from = null, search = null } = options;
     const offset = (page - 1) * limit;
     let whereClause = 'WHERE 1=1';
     const params = [];
@@ -466,19 +450,16 @@ export class User extends BaseService {
       params.push(status);
       paramIndex++;
     }
-
     if (from !== null) {
       whereClause += ` AND "from" = $${paramIndex}`;
       params.push(from);
       paramIndex++;
     }
-
     if (search) {
       whereClause += ` AND email ILIKE $${paramIndex}`;
       params.push(`%${search}%`);
       paramIndex++;
     }
-
     // 查询总数
     const countSQL = `SELECT COUNT(*) as total FROM users ${whereClause}`;
     const countResult = await this.gl.db.findOne(countSQL, params);
@@ -495,15 +476,14 @@ export class User extends BaseService {
 
     const users = await this.gl.db.findMany(listSQL, [...params, limit, offset]);
 
-    return {
-      users,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
-    };
+    return { users, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  }
+  async handleAccountLoginSuccessful({salt,...rest}){
+    const user = await this.getUserById(uid)
+    if(!user){
+      throw new Error('用户不存在')
+    }
+    return user
   }
 
   /**

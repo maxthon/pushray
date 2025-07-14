@@ -31,6 +31,10 @@ async function main() {
     await regEndpoints()
     //create more classes here
     await Util.create(gl)
+    if (process.env.Modules.indexOf("redis") != -1) {
+        const { Redis } = await import('./redis.js')
+        await Redis.create(gl)
+    }
     if (process.env.Modules.indexOf("user") != -1) {
         const { DB } = await import('./db.js')
         await DB.create(gl)
@@ -63,6 +67,10 @@ async function regEndpoints() {
     app.post('/notify/_commonapi', async (req, res) => {
         const body = req.body
         console.log(body)
+        const { cmd, result } = body
+        if (cmd === 'login_successful') {
+
+        }
         return "ok"
     })
 }
