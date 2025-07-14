@@ -27,7 +27,7 @@ export class DB extends BaseService {
                 idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT) || 30000,
                 connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT) || 2000,
             };
-
+            console.log(connectionString)
             logger.info('使用连接字符串创建数据库连接池', {
                 connectionString: connectionString.replace(/\/\/[^@]*@/, '//***:***@'), // 隐藏密码
                 poolMax: dbConfig.max
