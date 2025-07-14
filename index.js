@@ -3,7 +3,7 @@ import cors from '@fastify/cors'
 import dotenv from "dotenv";
 
 import { Logger } from './logger.js';
-import { Config } from './config.js';
+
 import { Util } from './common/util.js';
 
 dotenv.config({ path: "env" })
@@ -16,7 +16,7 @@ const logger = new Logger({
 });
 gl.logger = logger
 gl.app = app
-gl.config = Config
+
 async function onExit() {
     console.log("exiting...")
     process.exit(0);
@@ -26,10 +26,11 @@ async function startServer() {
     await app.listen({ port, host: '0.0.0.0' });
     console.log(`Starting ${process.env.APP_NAME} service on:`, port)
 }
-
 async function main() {
     await regEndpoints()
     //create more classes here
+    const { Config } = await import('./config.js');
+    gl.config = Config
     await Util.create(gl)
     if (process.env.Modules.indexOf("redis") != -1) {
         const { Redis } = await import('./redis.js')
