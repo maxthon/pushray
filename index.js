@@ -54,7 +54,7 @@ async function regEndpoints() {
     })
     app.get('/', (req, res) => {
         console.log(req.url)
-        return Config.project.name
+        return gl.config.project.name
     })
     app.get('/test', async (req, res) => {
 
