@@ -151,8 +151,7 @@ export class User extends BaseService {
    * @param {Object} userData - 用户数据
    * @returns {Promise<Object>} 创建的用户信息（不包含密码）
    */
-  async createUser(userData) {
-    const { email, password, from = 0, info = {}, status = 1 } = userData;
+  async createUser({ email, password, from = 0, info = {}, status = 1 }) {
 
     if (!email) {
       throw new Error('邮箱不能为空');
@@ -208,13 +207,20 @@ export class User extends BaseService {
    * 用户登录验证
    * @param {string} email - 邮箱
    * @param {string} password - 密码
+   * @param {string} salt - one time login code
    * @returns {Promise<Object|null>} 用户信息或null
    */
-  async authenticateUser(email, password) {
-    if (!email || !password) {
+  async authenticateUser({ salt, email, password }) {
+    if (!salt && (!email || !password)) {
       throw new Error('邮箱和密码不能为空');
     }
-
+    let verifyPass = true
+    if (salt) {
+      const { redis } = this.gl
+      email = await redis.get(salt)
+      await redis.del(salt)
+      verifyPass = false
+    }
     const user = await this.gl.db.findOne(
       'SELECT * FROM users WHERE email = $1 AND status = 1',
       [email]
@@ -224,52 +230,47 @@ export class User extends BaseService {
       this.gl.logger.warn('登录失败：用户不存在或已禁用', { email });
       return null;
     }
-
-    const isValidPassword = this.verifyPassword(password, user.pass);
-
-    if (!isValidPassword) {
-      this.gl.logger.warn('登录失败：密码错误', { email, uid: user.uid });
-      return null;
+    if (verifyPass) {
+      const isValidPassword = this.verifyPassword(password, user.pass);
+      if (!isValidPassword) {
+        this.gl.logger.warn('登录失败：密码错误', { email, uid: user.uid });
+        return null;
+      }
     }
-
     this.gl.logger.info('用户登录成功', {
       uid: user.uid,
       email: user.email
     });
-
     // 返回用户信息（不包含密码）
     const { pass, ...userInfo } = user;
     return userInfo;
   }
 
   /**
-   * 根据UID获取用户信息
-   * @param {number} uid - 用户ID
+   * 根据邮箱或UID获取用户信息
+   * @param {Object} params - 查询参数
+   * @param {string} params.email - 邮箱（可选）
+   * @param {number} params.uid - 用户ID（可选）
    * @returns {Promise<Object|null>} 用户信息或null
    */
-  async getUserById(uid) {
-    const user = await this.gl.db.findOne(
-      'SELECT uid, email, "from", info, created_at, updated_at, status FROM users WHERE uid = $1',
-      [uid]
-    );
+  async getUser({ email, uid }) {
+    if (!email && !uid) {
+      throw new Error('必须提供邮箱或用户ID');
+    }
 
+    let query, params;
+
+    if (uid) {
+      query = 'SELECT uid, email, "from", info, created_at, updated_at, status FROM users WHERE uid = $1';
+      params = [uid];
+    } else {
+      query = 'SELECT uid, email, "from", info, created_at, updated_at, status FROM users WHERE email = $1';
+      params = [email];
+    }
+
+    const user = await this.gl.db.findOne(query, params);
     return user;
   }
-
-  /**
-   * 根据邮箱获取用户信息
-   * @param {string} email - 邮箱
-   * @returns {Promise<Object|null>} 用户信息或null
-   */
-  async getUserByEmail(email) {
-    const user = await this.gl.db.findOne(
-      'SELECT uid, email, "from", info, created_at, updated_at, status FROM users WHERE email = $1',
-      [email]
-    );
-
-    return user;
-  }
-
   /**
    * 更新用户信息
    * @param {number} uid - 用户ID
@@ -389,9 +390,7 @@ export class User extends BaseService {
    * @param {Object} userData.info - 用户信息（可选）
    * @returns {Promise<Object>} 用户信息
    */
-  async ensureUser(userData) {
-    const { email, uid, from, info = {} } = userData;
-
+  async ensureUser({ email, uid, from, info = {} }) {
     // 参数验证
     if (!email && !uid) {
       throw new Error('必须提供邮箱或用户ID');
@@ -400,11 +399,7 @@ export class User extends BaseService {
     let user = null;
 
     // 根据提供的参数查找用户
-    if (uid) {
-      user = await this.getUserById(uid);
-    } else if (email) {
-      user = await this.getUserByEmail(email);
-    }
+    user = await this.getUser({ email, uid });
 
     // 如果用户存在，返回用户信息
     if (user) {
@@ -421,11 +416,8 @@ export class User extends BaseService {
       throw new Error('创建用户时邮箱不能为空');
     }
 
-    // 创建用户数据
-    const createUserData = { email, from: from || 0, info };
-
     // 如果是第三方用户且没有密码，会自动生成随机密码
-    const newUser = await this.createUser(createUserData);
+    const newUser = await this.createUser({ email, from: from || 0, info });
 
     this.gl.logger.info('用户创建成功', { uid: newUser.uid, email: newUser.email, from: newUser.from, fromName: this.getFromName(newUser.from) });
 
@@ -480,7 +472,14 @@ export class User extends BaseService {
   }
   async handleLoginSuccessful_fromCommonAPI({ salt, ...rest }) {
     const { redis } = gl
-    redis.$r.set(salt, JSON.stringify(rest), { EX: 60 * 5 })
+    console.log("handleLoginSuccessful_fromCommonAPI", salt, rest)
+    if (!salt) return { code: 100, err: "no salt" }
+    const { type, email, picture } = rest
+    if (type === 'google') {
+      await this.ensureUser({ email, from: 1, info: { avatar: picture } })
+    }
+    redis.$r.set(salt, email, { EX: 60 * 5 })
+    return { code: 0, msg: "ok" }
   }
 
   /**
@@ -489,7 +488,7 @@ export class User extends BaseService {
    */
   async regEndpoints(app) {
     // 用户注册
-    app.post('/users/register', async (req, res) => {
+    app.post('/user/register', async (req, res) => {
       try {
         const { email, password, from, info } = req.body;
         const user = await this.createUser({ email, password, from, info });
@@ -502,10 +501,10 @@ export class User extends BaseService {
     });
 
     // 用户登录
-    app.post('/users/login', async (req, res) => {
+    app.post('/user/login', async (req, res) => {
       try {
-        const { email, password } = req.body;
-        const user = await this.authenticateUser(email, password);
+        const { salt, email, password } = req.body;
+        const user = await this.authenticateUser({ salt, email, password });
 
         if (!user) {
           return { code: 100, err: '邮箱或密码错误' };
@@ -518,10 +517,10 @@ export class User extends BaseService {
     });
 
     // 获取用户信息
-    app.get('/users/:uid', async (req, res) => {
+    app.get('/user/:uid', async (req, res) => {
       try {
         const { uid } = req.params;
-        const user = await this.getUserById(parseInt(uid));
+        const user = await this.getUser({ uid: parseInt(uid) });
         return user ? { code: 0, result: user } : { code: 100, err: '用户不存在' };
       } catch (error) {
         this.gl.logger.error('获取用户信息失败', { error: error.message, uid: req.params.uid });
@@ -530,7 +529,7 @@ export class User extends BaseService {
     });
 
     // 更新用户信息
-    app.post('/users/:uid/update', async (req, res) => {
+    app.post('/user/:uid/update', async (req, res) => {
       try {
         const { uid } = req.params;
         const updateData = req.body;
@@ -545,7 +544,7 @@ export class User extends BaseService {
     });
 
     // 更新用户密码
-    app.post('/users/:uid/password', async (req, res) => {
+    app.post('/user/:uid/password', async (req, res) => {
       try {
         const { uid } = req.params;
         const { oldPassword, newPassword } = req.body;
@@ -560,7 +559,7 @@ export class User extends BaseService {
     });
 
     // 删除用户
-    app.delete('/users/:uid', async (req, res) => {
+    app.delete('/user/:uid', async (req, res) => {
       try {
         const { uid } = req.params;
         await this.deleteUser(parseInt(uid));
@@ -573,7 +572,7 @@ export class User extends BaseService {
     });
 
     // 获取用户列表
-    app.get('/users', async (req, res) => {
+    app.get('/user', async (req, res) => {
       try {
         const { page, limit, status, from, search } = req.query;
         const result = await this.getUserList({

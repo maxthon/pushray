@@ -207,8 +207,8 @@ const thirdPartyUser = await user.createUser({
 const authenticatedUser = await user.authenticateUser('user@example.com', 'securepassword');
 
 // 获取用户信息
-const userInfo = await user.getUserById(userId);
-const userByEmail = await user.getUserByEmail('user@example.com');
+const userInfo = await user.getUser({ uid: userId });
+const userByEmail = await user.getUser({ email: 'user@example.com' });
 
 // 更新用户信息
 const updatedUser = await user.updateUser(userId, {
