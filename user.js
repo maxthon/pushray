@@ -471,7 +471,7 @@ export class User extends BaseService {
     return { users, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
   async handleLoginSuccessful_fromCommonAPI({ salt, ...rest }) {
-    const { redis } = gl
+    const { redis } = this.gl
     console.log("handleLoginSuccessful_fromCommonAPI", salt, rest)
     if (!salt) return { code: 100, err: "no salt" }
     const { type, email, picture } = rest
