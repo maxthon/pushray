@@ -478,7 +478,7 @@ export class User extends BaseService {
     if (type === 'google') {
       await this.ensureUser({ email, frm: 1, info: { avatar: picture } })
     }
-    redis.$r.set(salt, email, { EX: 60 * 5 })
+    redis.$r.set(salt, email, 'EX', 60 * 5)
     return { code: 0, msg: "ok" }
   }
 
