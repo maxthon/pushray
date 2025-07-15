@@ -46,7 +46,7 @@ export class User extends BaseService {
           uid SERIAL PRIMARY KEY,
           email TEXT UNIQUE NOT NULL,
           pass TEXT NOT NULL,
-          "from" INTEGER DEFAULT 0,
+          frm INTEGER DEFAULT 0,
           info JSONB DEFAULT '{}',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -56,7 +56,7 @@ export class User extends BaseService {
         -- 创建索引
         CREATE INDEX idx_users_email ON users(email);
         CREATE INDEX idx_users_status ON users(status);
-        CREATE INDEX idx_users_from ON users("from");
+        CREATE INDEX idx_users_from ON users(frm);
         CREATE INDEX idx_users_created_at ON users(created_at);
         
         -- 创建更新时间触发器
@@ -133,17 +133,17 @@ export class User extends BaseService {
 
   /**
    * 获取第三方应用名称
-   * @param {number} from - 第三方应用ID
+   * @param {number} frm - 第三方应用ID
    * @returns {string} 应用名称
    */
-  getFromName(from) {
+  getFromName(frm) {
     const fromMap = {
       1: 'Magic Link',
       2: 'Google',
       3: 'Maxthon'
     };
 
-    return fromMap[from] || `Unknown(${from})`;
+    return fromMap[frm] || `Unknown(${frm})`;
   }
 
   /**
@@ -151,27 +151,27 @@ export class User extends BaseService {
    * @param {Object} userData - 用户数据
    * @returns {Promise<Object>} 创建的用户信息（不包含密码）
    */
-  async createUser({ email, password, from = 0, info = {}, status = 1 }) {
-
+  async createUser({ email, password, frm = 0, info = {}, status = 1 }) {
+    const { db, logger } = this.gl
     if (!email) {
       throw new Error('邮箱不能为空');
     }
 
     // 如果有from参数但没有password，生成随机密码
     let finalPassword = password;
-    if (from && from > 0 && !password) {
+    if (frm && frm > 0 && !password) {
       finalPassword = this.generateRandomPassword();
       this.gl.logger.info('为第三方用户生成随机密码', {
         email,
-        from,
-        fromName: this.getFromName(from)
+        frm,
+        fromName: this.getFromName(frm)
       });
     } else if (!password) {
       throw new Error('密码不能为空');
     }
 
     // 检查邮箱是否已存在
-    const existingUser = await this.gl.db.findOne(
+    const existingUser = await db.findOne(
       'SELECT uid FROM users WHERE email = $1',
       [email]
     );
@@ -184,18 +184,18 @@ export class User extends BaseService {
     const { hash } = this.hashPassword(finalPassword);
 
     // 插入用户
-    const newUser = await this.gl.db.insert('users', {
+    const newUser = await db.insert('users', {
       email,
       pass: hash,
-      from,
+      frm,
       info: JSON.stringify(info),
       status
     });
 
-    this.gl.logger.info('用户创建成功', {
+    logger.info('用户创建成功', {
       uid: newUser.uid,
       email: newUser.email,
-      from: newUser.from
+      frm: newUser.frm
     });
 
     // 返回用户信息（不包含密码）
@@ -261,10 +261,10 @@ export class User extends BaseService {
     let query, params;
 
     if (uid) {
-      query = 'SELECT uid, email, "from", info, created_at, updated_at, status FROM users WHERE uid = $1';
+      query = 'SELECT uid, email, frm, info, created_at, updated_at, status FROM users WHERE uid = $1';
       params = [uid];
     } else {
-      query = 'SELECT uid, email, "from", info, created_at, updated_at, status FROM users WHERE email = $1';
+      query = 'SELECT uid, email, frm, info, created_at, updated_at, status FROM users WHERE email = $1';
       params = [email];
     }
 
@@ -278,7 +278,7 @@ export class User extends BaseService {
    * @returns {Promise<Object>} 更新后的用户信息
    */
   async updateUser(uid, updateData) {
-    const allowedFields = ['email', 'from', 'info', 'status'];
+    const allowedFields = ['email', 'frm', 'info', 'status'];
     const updateFields = {};
 
     // 过滤允许更新的字段
@@ -386,11 +386,11 @@ export class User extends BaseService {
    * @param {Object} userData - 用户数据
    * @param {string} userData.email - 邮箱（可选，如果提供uid则可不提供）
    * @param {number} userData.uid - 用户ID（可选，如果提供email则可不提供）
-   * @param {string} userData.from - 第三方来源
+   * @param {string} userData.frm - 第三方来源
    * @param {Object} userData.info - 用户信息（可选）
    * @returns {Promise<Object>} 用户信息
    */
-  async ensureUser({ email, uid, from, info = {} }) {
+  async ensureUser({ email, uid, frm, info = {} }) {
     // 参数验证
     if (!email && !uid) {
       throw new Error('必须提供邮箱或用户ID');
@@ -406,7 +406,7 @@ export class User extends BaseService {
       this.gl.logger.info('用户已存在', {
         uid: user.uid,
         email: user.email,
-        from: user.from
+        frm: user.frm
       });
       return user;
     }
@@ -417,9 +417,9 @@ export class User extends BaseService {
     }
 
     // 如果是第三方用户且没有密码，会自动生成随机密码
-    const newUser = await this.createUser({ email, from: from || 0, info });
+    const newUser = await this.createUser({ email, frm: frm || 0, info });
 
-    this.gl.logger.info('用户创建成功', { uid: newUser.uid, email: newUser.email, from: newUser.from, fromName: this.getFromName(newUser.from) });
+    this.gl.logger.info('用户创建成功', { uid: newUser.uid, email: newUser.email, frm: newUser.frm, fromName: this.getFromName(newUser.frm) });
 
     return newUser;
   }
@@ -430,7 +430,7 @@ export class User extends BaseService {
    * @returns {Promise<Object>} 用户列表和分页信息
    */
   async getUserList(options = {}) {
-    const { page = 1, limit = 20, status = null, from = null, search = null } = options;
+    const { page = 1, limit = 20, status = null, frm = null, search = null } = options;
     const offset = (page - 1) * limit;
     let whereClause = 'WHERE 1=1';
     const params = [];
@@ -442,9 +442,9 @@ export class User extends BaseService {
       params.push(status);
       paramIndex++;
     }
-    if (from !== null) {
-      whereClause += ` AND "from" = $${paramIndex}`;
-      params.push(from);
+    if (frm !== null) {
+      whereClause += ` AND frm = $${paramIndex}`;
+      params.push(frm);
       paramIndex++;
     }
     if (search) {
@@ -459,7 +459,7 @@ export class User extends BaseService {
 
     // 查询用户列表
     const listSQL = `
-      SELECT uid, email, "from", info, created_at, updated_at, status 
+      SELECT uid, email, frm, info, created_at, updated_at, status 
       FROM users 
       ${whereClause} 
       ORDER BY created_at DESC 
@@ -476,7 +476,7 @@ export class User extends BaseService {
     if (!salt) return { code: 100, err: "no salt" }
     const { type, email, picture } = rest
     if (type === 'google') {
-      await this.ensureUser({ email, from: 1, info: { avatar: picture } })
+      await this.ensureUser({ email, frm: 1, info: { avatar: picture } })
     }
     redis.$r.set(salt, email, { EX: 60 * 5 })
     return { code: 0, msg: "ok" }
@@ -490,8 +490,8 @@ export class User extends BaseService {
     // 用户注册
     app.post('/user/register', async (req, res) => {
       try {
-        const { email, password, from, info } = req.body;
-        const user = await this.createUser({ email, password, from, info });
+        const { email, password, frm, info } = req.body;
+        const user = await this.createUser({ email, password, frm, info });
 
         return { code: 0, result: user };
       } catch (error) {
@@ -574,12 +574,12 @@ export class User extends BaseService {
     // 获取用户列表
     app.get('/user', async (req, res) => {
       try {
-        const { page, limit, status, from, search } = req.query;
+        const { page, limit, status, frm, search } = req.query;
         const result = await this.getUserList({
           page: page ? parseInt(page) : undefined,
           limit: limit ? parseInt(limit) : undefined,
           status: status !== undefined ? parseInt(status) : null,
-          from: from !== undefined ? parseInt(from) : null,
+          frm: frm !== undefined ? parseInt(frm) : null,
           search
         });
 
