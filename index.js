@@ -1,6 +1,9 @@
 import fastifyModule from 'fastify';
 import cors from '@fastify/cors'
+import fastifyStatic from '@fastify/static'
 import dotenv from "dotenv";
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 import { Logger } from './logger.js';
 import { Config } from './config.js';
@@ -22,7 +25,7 @@ async function onExit() {
     process.exit(0);
 }
 async function startServer() {
-    const port = process.env.port || 8080
+    const port = process.env.PORT || 8080
     await app.listen({ port, host: '0.0.0.0' });
     console.log(`Starting ${process.env.APP_NAME} service on:`, port)
 }
@@ -47,6 +50,14 @@ async function main() {
     process.on('SIGTERM', onExit);
 }
 async function regEndpoints() {
+    // 注册静态文件服务
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    await app.register(fastifyStatic, {
+        root: path.join(__dirname, 'static'),
+        prefix: '/static/'
+    });
+
     await app.register(cors, { origin: true, credentials: true, allowedHeaders: ['content-type'] });
     app.addHook("preHandler", async (req, res) => {
         console.log(req.url)
