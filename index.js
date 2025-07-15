@@ -80,7 +80,7 @@ async function regEndpoints() {
         const body = req.body
         console.log(body)
         const { cmd, result } = body
-        if (cmd === 'login_successful') {
+        if (cmd === 'login_success') {
             const { user } = gl
             await user.handleLoginSuccessful_fromCommonAPI(result)
         }
