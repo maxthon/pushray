@@ -474,9 +474,13 @@ export class User extends BaseService {
     const { redis } = this.gl
     console.log("handleLoginSuccessful_fromCommonAPI", salt, rest)
     if (!salt) return { code: 100, err: "no salt" }
-    const { type, email, picture } = rest
+    const { type, email, picture, avatar_url } = rest
     if (type === 'google') {
       await this.ensureUser({ email, frm: 1, info: { avatar: picture } })
+    }
+    if (type === 'maxthon') {
+      if (!email) email = 'non-exist@non-exist.ooo'
+      await this.ensureUser({ email, frm: 2, info: { avatar: avatar_url } })
     }
     redis.$r.set(salt, email, 'EX', 60 * 5)
     return { code: 0, msg: "ok" }
