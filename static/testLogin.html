@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .login-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: background-color 0.3s;
+        }
+
+        .login-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .login-btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .info {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #0066cc;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .status.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .status.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>登录测试页面</h1>
+        <p>点击下方按钮在新窗口中打开登录页面</p>
+
+        <div class="info">
+            <strong>说明：</strong>
+            <ul style="text-align: left; display: inline-block;">
+                <li>点击登录按钮将跳转到登录页面</li>
+                <li>登录成功后会自动返回本页面</li>
+                <li>返回时会自动验证登录信息并显示结果</li>
+                <li>登录信息会保存到本地存储中</li>
+            </ul>
+        </div>
+
+        <button class="login-btn" onclick="openLoginWindow()">登录</button>
+
+        <div class="status" id="status"></div>
+
+        <!-- 显示登录结果的区域 -->
+        <div id="loginResult"
+            style="display: none; margin-top: 20px; padding: 15px; border-radius: 5px; background-color: #f8f9fa; border: 1px solid #dee2e6;">
+            <h3>登录结果</h3>
+            <pre id="resultContent"
+                style="text-align: left; background-color: #ffffff; padding: 10px; border-radius: 3px; overflow-x: auto;"></pre>
+        </div>
+    </div>
+
+    <script>
+
+        function openLoginWindow() {
+            // 获取当前页面URL作为redirect参数
+            const currentUrl = window.location.href;
+            const loginUrl = `https://commonapi.mxfast.com/static/login.html?app=pushray&redir=${encodeURIComponent(currentUrl)}`;
+
+            try {
+                // 直接跳转到登录页面
+                window.location.href = loginUrl;
+            } catch (error) {
+                console.error('跳转到登录页面时出错:', error);
+                showStatus('跳转到登录页面时出错: ' + error.message, 'error');
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+            statusDiv.style.display = 'block';
+
+            // 3秒后自动隐藏状态信息
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // 显示登录结果
+        function displayLoginResult(result) {
+            const resultDiv = document.getElementById('loginResult');
+            const resultContent = document.getElementById('resultContent');
+
+            // 格式化显示结果
+            resultContent.textContent = JSON.stringify(result, null, 2);
+
+            // 显示结果区域
+            resultDiv.style.display = 'block';
+
+            // 滚动到结果区域
+            resultDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 从URL参数中获取salt并处理登录
+        function checkLoginFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const salt = urlParams.get('salt');
+
+            if (salt) {
+                console.log('检测到URL中的salt参数:', salt);
+                showStatus('检测到登录返回，正在验证...', 'success');
+
+                // 调用登录处理函数
+                handleLoginWithSalt(salt);
+
+                // 清理URL中的salt参数，避免刷新页面时重复处理
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.delete('salt');
+                window.history.replaceState({}, document.title, newUrl.toString());
+            }
+        }
+
+        // 使用salt处理登录
+        async function handleLoginWithSalt(salt) {
+            if (!salt) {
+                showStatus('未收到有效的salt参数', 'error');
+                return;
+            }
+
+            try {
+                // 调用后台 /user/loginj 接口
+                showStatus('正在验证登录信息...', 'success');
+
+                const response = await fetch('/user/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ salt: salt })
+                });
+
+                const result = await response.json();
+
+                // 在页面上显示返回的信息
+                displayLoginResult(result);
+
+                if (result.code === 0) {
+                    showStatus('登录验证成功！', 'success');
+                    // 保存登录信息到localStorage
+                    if (result.data) {
+                        localStorage.setItem('loginResult', JSON.stringify(result.data));
+                    }
+                } else {
+                    showStatus(`登录验证失败: ${result.err || '未知错误'}`, 'error');
+                }
+            } catch (error) {
+                console.error('调用登录接口时出错:', error);
+                showStatus('调用登录接口时出错: ' + error.message, 'error');
+            }
+        }
+
+
+
+        // 页面加载时检查URL参数
+        window.addEventListener('DOMContentLoaded', function () {
+            checkLoginFromUrl();
+        });
+    </script>
+</body>
+
+</html>
