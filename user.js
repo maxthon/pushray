@@ -217,8 +217,8 @@ export class User extends BaseService {
     let verifyPass = true
     if (salt) {
       const { redis } = this.gl
-      email = await redis.get(salt)
-      await redis.del(salt)
+      email = await redis.$r.get(salt)
+      await redis.$r.del(salt)
       verifyPass = false
     }
     const user = await this.gl.db.findOne(
