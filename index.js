@@ -79,10 +79,10 @@ async function regEndpoints() {
     app.post('/notify/_commonapi', async (req, res) => {
         const body = req.body
         console.log(body)
-        const { cmd, result } = body
-        if (cmd === 'login_success') {
+        const { event, data } = body
+        if (event === 'login_success') {
             const { user } = gl
-            await user.handleLoginSuccessful_fromCommonAPI(result)
+            await user.handleLoginSuccessful_fromCommonAPI(data)
         }
         return "ok"
     })
