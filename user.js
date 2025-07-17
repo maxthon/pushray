@@ -82,18 +82,18 @@ export class User extends BaseService {
   /**
    * 密码加密
    * @param {string} password - 原始密码
-   * @param {string} salt - 盐值（可选）
+   * @param {string} OTT - 盐值（可选）
    * @returns {Object} 包含加密密码和盐值的对象
    */
-  hashPassword(password, salt = null) {
-    if (!salt) {
-      salt = crypto.randomBytes(16).toString('hex');
+  hashPassword(password, OTT = null) {
+    if (!OTT) {
+      OTT = crypto.randomBytes(16).toString('hex');
     }
 
-    const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+    const hash = crypto.pbkdf2Sync(password, OTT, 10000, 64, 'sha512').toString('hex');
     return {
-      hash: `${salt}:${hash}`,
-      salt
+      hash: `${OTT}:${hash}`,
+      OTT
     };
   }
 
@@ -105,8 +105,8 @@ export class User extends BaseService {
    */
   verifyPassword(password, hashedPassword) {
     try {
-      const [salt, hash] = hashedPassword.split(':');
-      const verifyHash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+      const [OTT, hash] = hashedPassword.split(':');
+      const verifyHash = crypto.pbkdf2Sync(password, OTT, 10000, 64, 'sha512').toString('hex');
       return hash === verifyHash;
     } catch (error) {
       this.gl.logger.error('密码验证失败', { error: error.message });
@@ -207,18 +207,18 @@ export class User extends BaseService {
    * 用户登录验证
    * @param {string} email - 邮箱
    * @param {string} password - 密码
-   * @param {string} salt - one time login code
+   * @param {string} OTT - one time login code
    * @returns {Promise<Object|null>} 用户信息或null
    */
-  async authenticateUser({ salt, email, password }) {
-    if (!salt && (!email || !password)) {
+  async authenticateUser({ OTT, email, password }) {
+    if (!OTT && (!email || !password)) {
       throw new Error('邮箱和密码不能为空');
     }
     let verifyPass = true
-    if (salt) {
+    if (OTT) {
       const { redis } = this.gl
-      email = await redis.$r.get(salt)
-      await redis.$r.del(salt)
+      email = await redis.$r.get(OTT)
+      await redis.$r.del(OTT)
       verifyPass = false
     }
     const user = await this.gl.db.findOne(
@@ -470,10 +470,10 @@ export class User extends BaseService {
 
     return { users, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
-  async handleLoginSuccessful_fromCommonAPI({ salt, ...rest }) {
+  async handleLoginSuccessful_fromCommonAPI({ OTT, ...rest }) {
     const { redis } = this.gl
-    console.log("handleLoginSuccessful_fromCommonAPI", salt, rest)
-    if (!salt) return { code: 100, err: "no salt" }
+    console.log("handleLoginSuccessful_fromCommonAPI", OTT, rest)
+    if (!OTT) return { code: 100, err: "no OTT" }
     const { type, email, picture, avatar_url } = rest
     if (type === 'google') {
       await this.ensureUser({ email, frm: 1, info: { avatar: picture } })
@@ -482,7 +482,7 @@ export class User extends BaseService {
       if (!email) email = 'non-exist@non-exist.ooo'
       await this.ensureUser({ email, frm: 2, info: { avatar: avatar_url } })
     }
-    redis.$r.set(salt, email, 'EX', 60 * 5)
+    redis.$r.set(OTT, email, 'EX', 60 * 5)
     return { code: 0, msg: "ok" }
   }
 
@@ -507,8 +507,8 @@ export class User extends BaseService {
     // 用户登录
     app.post('/user/login', async (req, res) => {
       try {
-        const { salt, email, password } = req.body;
-        const user = await this.authenticateUser({ salt, email, password });
+        const { OTT, email, password } = req.body;
+        const user = await this.authenticateUser({ OTT, email, password });
 
         if (!user) {
           return { code: 100, err: '邮箱或密码错误' };

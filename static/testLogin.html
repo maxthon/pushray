@@ -141,29 +141,29 @@
             resultDiv.scrollIntoView({ behavior: 'smooth' });
         }
 
-        // 从URL参数中获取salt并处理登录
+        // 从URL参数中获取OTT并处理登录
         function checkLoginFromUrl() {
             const urlParams = new URLSearchParams(window.location.search);
-            const salt = urlParams.get('salt');
+            const OTT = urlParams.get('OTT');
 
-            if (salt) {
-                console.log('检测到URL中的salt参数:', salt);
+            if (OTT) {
+                console.log('检测到URL中的OTT参数:', OTT);
                 showStatus('检测到登录返回，正在验证...', 'success');
 
                 // 调用登录处理函数
-                handleLoginWithSalt(salt);
+                handleLoginWithOTT(OTT);
 
-                // 清理URL中的salt参数，避免刷新页面时重复处理
+                // 清理URL中的OTT参数，避免刷新页面时重复处理
                 const newUrl = new URL(window.location);
-                newUrl.searchParams.delete('salt');
+                newUrl.searchParams.delete('OTT');
                 window.history.replaceState({}, document.title, newUrl.toString());
             }
         }
 
-        // 使用salt处理登录
-        async function handleLoginWithSalt(salt) {
-            if (!salt) {
-                showStatus('未收到有效的salt参数', 'error');
+        // 使用OTT处理登录
+        async function handleLoginWithOTT(OTT) {
+            if (!OTT) {
+                showStatus('未收到有效的OTT参数', 'error');
                 return;
             }
 
@@ -176,7 +176,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ salt: salt })
+                    body: JSON.stringify({ OTT: OTT })
                 });
 
                 const result = await response.json();
