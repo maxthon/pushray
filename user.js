@@ -517,7 +517,7 @@ export class User extends BaseService {
         if (!user) {
           return { code: 100, err: '邮箱或密码错误' };
         }
-        const token = await util.uidToToken({ uid: result.uid, create: Date.now(), expire: Date.now() + 3600 * 24 * 30 })
+        const token = await util.uidToToken({ uid: user.uid, create: Date.now(), expire: Date.now() + 3600 * 24 * 30 })
         util.setCookie({ req, res, name: `${process.env.APP_NAME}_ut`, value: token, days: 30, secure: true })
 
         return { code: 0, result: user };
