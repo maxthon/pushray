@@ -482,6 +482,9 @@ export class User extends BaseService {
       if (!email) email = 'non-exist@non-exist.ooo'
       await this.ensureUser({ email, frm: 2, info: { avatar: avatar_url } })
     }
+    if (type === 'email') {
+      await this.ensureUser({ email, frm: 3, info: {} })
+    }
     redis.$r.set(OTT, email, 'EX', 60 * 5)
     return { code: 0, msg: "ok" }
   }
