@@ -59,6 +59,7 @@ export class Util extends BaseService {
         return {}
     }
     getCookie({ req, name }) {
+        if (!req.cookies) return null
         return req.cookies[name]
     }
     setCookie({ req, res, name, value, path = '/', secure = true, domain = 'root', days, httpOnly = false, sameSite = 'none' }) {
