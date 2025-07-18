@@ -510,12 +510,16 @@ export class User extends BaseService {
     // 用户登录
     app.post('/user/login', async (req, res) => {
       try {
+        const { util } = this.gl
         const { OTT, email, password } = req.body;
         const user = await this.authenticateUser({ OTT, email, password });
 
         if (!user) {
           return { code: 100, err: '邮箱或密码错误' };
         }
+        const token = await util.uidToToken({ uid: result.uid, create: Date.now(), expire: Date.now() + 3600 * 24 * 30 })
+        util.setCookie({ req, res, name: `${process.env.APP_NAME}_ut`, value: token, days: 30, secure: true })
+
         return { code: 0, result: user };
       } catch (error) {
         this.gl.logger.error('用户登录失败', { error: error.message });
