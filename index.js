@@ -61,10 +61,10 @@ async function regEndpoints() {
 
     await app.register(cors, { origin: true, credentials: true, allowedHeaders: ['content-type'] });
     app.addHook("preHandler", async (req, res) => {
-        const { util } = gl
+        const { util, logger } = gl
         const token = util.getCookie({ name: `${process.env.APP_NAME}_ut`, req })
         if (!token) {
-            request.log.warn("Missing auth token")
+            logger.error("Missing auth token")
             return res.status(401).send({ error: "Unauthorized: no token" })
         }
         const { uid } = await util.decodeToken({ token })
