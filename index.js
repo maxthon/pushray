@@ -61,6 +61,7 @@ async function regEndpoints() {
     });
 
     await app.register(cors, { origin: true, credentials: true, allowedHeaders: ['content-type'] });
+    await app.register(fasticookie)
     app.addHook("preHandler", async (req, res) => {
         const { util, logger } = gl
         const token = util.getCookie({ name: `${process.env.APP_NAME}_ut`, req })
