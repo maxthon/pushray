@@ -1,6 +1,7 @@
 import fastifyModule from 'fastify';
 import cors from '@fastify/cors'
 import fastifyStatic from '@fastify/static'
+import fasticookie from '@fastify/cookie'
 import dotenv from "dotenv";
 import path from 'path';
 import { fileURLToPath } from 'url';
