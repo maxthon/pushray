@@ -3,7 +3,7 @@ import { BaseService } from "./baseService.js";
 
 export class Util extends BaseService {
     async init(gl) {
-
+        this.tokenPass = process.env.tokenPass || "2rnma5xsc3efx1Z$#%^09FYkRfuAsxTB"
     }
     getClientIp(req) {
         let IP =
