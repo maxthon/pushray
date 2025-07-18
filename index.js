@@ -63,15 +63,9 @@ async function regEndpoints() {
     app.addHook("preHandler", async (req, res) => {
         const { util, logger } = gl
         const token = util.getCookie({ name: `${process.env.APP_NAME}_ut`, req })
-        if (!token) {
-            logger.error("Missing auth token")
-            return res.status(401).send({ error: "Unauthorized: no token" })
-        }
+        if (!token) return
         const { uid } = await util.decodeToken({ token })
-        if (!uid) {
-            return res.status(401).send({ error: "Unauthorized: invalid token" })
-        }
-        req.uid = uid
+        if (uid) req.uid = uid
     })
     app.get('/', (req, res) => {
         console.log(req.url)
